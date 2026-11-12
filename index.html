@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Registrasi - Finance Pro</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#060913',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="min-h-screen bg-[#060913] text-slate-200 font-sans flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#111A33] via-[#060913] to-[#000000]">
+
+    <!-- Background Accents -->
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <!-- Registration Card -->
+    <div class="bg-white/5 backdrop-blur-2xl p-6 sm:p-10 rounded-3xl border border-white/10 shadow-2xl w-full max-w-md relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-emerald-500/20 blur-[70px] rounded-full pointer-events-none"></div>
+
+        <div class="space-y-5 relative z-10">
+            <div>
+                <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-500">Registrasi Akun Baru</h2>
+                <p class="text-slate-400 text-sm mt-1">Buat akun untuk aplikasi finansial Anda</p>
+            </div>
+            
+            <form id="form-register" onsubmit="handleRegister(event)" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">User / Username</label>
+                    <input type="text" id="reg-username" required placeholder="Masukkan username"
+                        class="w-full px-4 py-3.5 bg-black/40 border border-white/10 rounded-xl focus:bg-black/60 outline-none transition-all text-white text-sm focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Asli</label>
+                    <input type="email" id="reg-email" required placeholder="email@domain.com"
+                        class="w-full px-4 py-3.5 bg-black/40 border border-white/10 rounded-xl focus:bg-black/60 outline-none transition-all text-white text-sm focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                    <input type="password" id="reg-password" required placeholder="Minimal 6 karakter"
+                        class="w-full px-4 py-3.5 bg-black/40 border border-white/10 rounded-xl focus:bg-black/60 outline-none transition-all text-white text-sm focus:border-emerald-500">
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-emerald-400 bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                    <i data-lucide="mail-check" class="w-5 h-5 shrink-0"></i>
+                    <span>Email verifikasi akan dikirim otomatis ke inbox Anda. Pastikan email aktif.</span>
+                </div>
+
+                <button type="submit" id="btn-reg-submit" class="w-full font-bold py-4 rounded-xl text-white text-sm sm:text-base bg-gradient-to-r from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/20 hover:opacity-95 hover:scale-[1.02] transition-all duration-300">
+                    Daftar & Kirim Email Verifikasi
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIREBASE MODULE SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            updateProfile, 
+            sendEmailVerification, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// --- KREDENSIAL FIREBASE ANDA ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSAw0etw0BbtA9YaQE8oS9UPO1cAvUC_Y",
+            authDomain: "keuangan-promax.firebaseapp.com",
+            projectId: "keuangan-promax",
+            storageBucket: "keuangan-promax.firebasestorage.app",
+            messagingSenderId: "921606809135",
+            appId: "1:921606809135:web:334703e53c1b6f1ef148da",
+            measurementId: "G-9NERBMR901"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Template default saat user baru mendaftar
+        const INITIAL_ACCOUNTS = [
+            { id: 'yucho', name: 'Yucho Bank', balance: 0, color: 'emerald', currency: 'JPY' },
+            { id: 'kyodai', name: 'Kyodai Remittance', balance: 0, color: 'blue', currency: 'JPY' },
+            { id: 'bsi', name: 'BSI (Transit)', balance: 0, color: 'emerald', currency: 'IDR' },
+            { id: 'seabank', name: 'SeaBank (Hub)', balance: 0, color: 'orange', currency: 'IDR' },
+            { id: 'dompet', name: 'Dompet Tunai', balance: 0, color: 'green', currency: 'JPY' }
+        ];
+
+        const INITIAL_BUDGETS = [
+            { id: 'kebutuhan', name: 'Kebutuhan Pokok', percent: 0.40, allocated: 0, spent: 0, color: 'cyan' },
+            { id: 'masa_depan', name: 'Masa Depan', percent: 0.25, allocated: 0, spent: 0, color: 'emerald' },
+            { id: 'keinginan', name: 'Keinginan & Hobi', percent: 0.20, allocated: 0, spent: 0, color: 'amber' },
+            { id: 'kewajiban', name: 'Kewajiban', percent: 0.15, allocated: 0, spent: 0, color: 'orange' }
+        ];
+
+        // LOGIKA REGISTRASI
+        window.handleRegister = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-reg-submit');
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            if (!username.trim()) {
+                alert("Username wajib diisi!");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = 'Mendaftarkan akun...';
+
+            try {
+                // 1. Buat akun di Firebase Auth
+                const res = await createUserWithEmailAndPassword(auth, email, password);
+                if (res.user) {
+                    // 2. Set display name
+                    await updateProfile(res.user, { displayName: username });
+                    
+                    // 3. Buat database default di Firestore
+                    await setDoc(doc(db, 'users', res.user.uid), {
+                        username: username,
+                        accounts: INITIAL_ACCOUNTS,
+                        budgets: INITIAL_BUDGETS,
+                        exchangeRate: 105
+                    });
+
+                    // 4. Kirim email verifikasi
+                    await sendEmailVerification(res.user);
+                    
+                    alert(`Registrasi Berhasil!\n\nKami telah mengirimkan tautan verifikasi ke email: ${email}.\nSilakan cek inbox (atau folder spam) Anda.`);
+                    
+                    // Otomatis logout setelah register
+                    await signOut(auth);
+                    
+                    // Bersihkan form
+                    document.getElementById('form-register').reset();
+                }
+            } catch (err) {
+                if (err.code === 'auth/email-already-in-use') {
+                    alert("Gagal: Email ini sudah terdaftar sebelumnya.");
+                } else if (err.code === 'auth/weak-password') {
+                    alert("Gagal: Password terlalu lemah (minimal 6 karakter).");
+                } else {
+                    alert("Gagal registrasi: " + err.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Daftar & Kirim Email Verifikasi';
+            }
+        };
+
+        // Render ikon lucide
+        lucide.createIcons();
+    </script>
+</body>
+</html>
